@@ -1,0 +1,78 @@
+/* styles/india-dance-map.css */
+
+/* Map container */
+.idm-container {
+  position: relative;
+  padding: 1rem;
+  background: #fff8ee; /* light cream background */
+  color: #2b2b2b;
+  min-height: 80vh;
+}
+
+/* Map wrapper adds padding and ensures svg visible */
+.idm-map-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 60vh;
+}
+
+/* Default state style (darker than before) */
+.idm-state {
+  transition: fill 150ms ease, stroke 150ms ease, filter 150ms ease;
+  fill: #e0d4c6;           /* darker cream fill */
+  stroke: #a07a48;         /* darker stroke */
+  stroke-width: 0.9;
+}
+
+/* Hover/active state */
+.idm-state:hover,
+.idm-state:focus {
+  fill: #d7bfa6 !important;   /* highlighted fill */
+  stroke: #7a4f2a !important; /* stronger stroke */
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12));
+  cursor: pointer;
+  outline: none;
+}
+
+/* Visually mark the currently "selected" state using a class set by React */
+.idm-state--active {
+  fill: #cfa983 !important;
+  stroke: #7a4f2a !important;
+  stroke-width: 1.2;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.14));
+}
+
+/* Tooltip */
+.idm-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none; /* don't block hover events on the map */
+  width: 220px;
+  background: linear-gradient(180deg, #ffffff, #fffaf3);
+  color: #222;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.06);
+  font-size: 14px;
+}
+.idm-tooltip-image {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.idm-tooltip-title { font-weight: 700; margin-top: 6px; }
+.idm-tooltip-sub  { color: #555; font-size: 13px; margin-top: 4px; }
+
+/* small helper for debug text area */
+.idm-debug {
+  background: rgba(255,255,255,0.8);
+  color: #333;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+

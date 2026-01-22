@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* MudraNet Palette: cream, brown, saffron/gold, terracotta */
+  --background: #fff8e1; /* Cream base */
+  --foreground: #4a2c00; /* Brown text */
+  --primary: #f4a300; /* Saffron/Gold */
+  --accent: #e66a00; /* Terracotta Orange */
+  --muted: #f5e6d3; /* Soft warm beige for cards */
+
+  --card: var(--muted);
+  --card-foreground: var(--foreground);
+  --popover: var(--muted);
+  --popover-foreground: var(--foreground);
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --muted-foreground: #6b4c2d; /* warm mid-brown */
+  --accent-foreground: #fff8e1; /* cream on accent */
+  --destructive: #b3362f;
+  --destructive-foreground: #fff7f5;
+  --border: #e8d4b8; /* warm border */
+  --input: #f5e6d3;
+  --ring: #f4a300;
+  --primary-foreground: #ffffff; /* white for hero headings */
+  --footer: #3d2817; /* deep warm brown */
+  --footer-foreground: #fff8e1; /* cream text on footer */
+
+  --chart-1: #f4a300;
+  --chart-2: #e66a00;
+  --chart-3: #d4924b;
+  --chart-4: #8b5a1f;
+  --chart-5: #f9c74f;
+
+  --radius: 0.625rem;
+
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #3d2817;
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  --glass: rgba(255, 248, 225, 0.25);
+  --glass-border: rgba(255, 248, 225, 0.35);
+}
+
+.dark {
+  --background: #2d1f12;
+  --foreground: #fff8e1;
+  --primary: #f9c74f;
+  --accent: #e66a00;
+  --muted: #4a3725;
+  --muted-foreground: #e8d4b8;
+  --accent-foreground: #2d1f12;
+  --border: #5a4530;
+  --input: #5a4530;
+  --ring: #f9c74f;
+  --card: #3d2817;
+  --card-foreground: var(--foreground);
+  --popover: #3d2817;
+  --popover-foreground: var(--foreground);
+  --footer: #1e1510;
+  --footer-foreground: #f5e6d3;
+}
+
+@theme inline {
+  --font-sans: var(--font-poppins);
+  --font-serif: var(--font-playfair);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground, #fffaf0);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer utilities {
+  .glass-panel {
+    background-color: var(--glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+  }
+  .hover-glow {
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 10px 30px rgba(244, 163, 0, 0.25);
+    transform: translateY(-2px);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    /* @apply bg-background text-foreground; */
+    background-color:#ffffff;
+    background-size: 600px 600px;
+    background-repeat: repeat;
+    background-attachment: fixed;
+  }
+}
