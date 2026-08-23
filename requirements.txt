@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-numpy==1.26.4
+numpy==2.0.2
 opencv-python==4.11.0.86
 mediapipe==0.10.21
 scikit-learn==1.6.1
