@@ -7,6 +7,8 @@ import pickle
 import asyncio
 import os
 import urllib.request
+import math
+from collections import deque, Counter
 
 import mediapipe as mp
 from mediapipe.tasks import python as mp_python
@@ -143,6 +145,40 @@ def predict_mudra(img_bgr):
 
 
 # ==========================
+# REALTIME SMOOTHING
+# ==========================
+SMOOTHING_WINDOW = 8       # frames considered for a "confirmed" prediction
+CONFIDENCE_THRESHOLD = 0.5  # below this, a frame's prediction is treated as unknown
+CONFIRM_RATIO = 0.75        # fraction of the window that must agree to confirm
+
+
+class PredictionSmoother:
+    """Tracks a rolling window of per-frame predictions for one connection and
+    only reports a mudra as "confirmed" once it has been the consistent
+    top prediction across most of the recent frames — avoids flickering
+    between labels as a held pose is captured frame by frame."""
+
+    def __init__(self, window_size=SMOOTHING_WINDOW):
+        self.window = deque(maxlen=window_size)
+
+    def update(self, label, confidence):
+        accepted = label if (label is not None and confidence >= CONFIDENCE_THRESHOLD) else None
+        self.window.append(accepted)
+
+        if len(self.window) < self.window.maxlen:
+            return None  # not enough frames yet to confirm anything
+
+        counts = Counter(l for l in self.window if l is not None)
+        if not counts:
+            return None
+
+        top_label, top_count = counts.most_common(1)[0]
+        if top_count >= math.ceil(CONFIRM_RATIO * len(self.window)):
+            return top_label
+        return None
+
+
+# ==========================
 # IMAGE PREDICTION
 # ==========================
 @app.post("/predict-image")
@@ -164,6 +200,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     print("✅ WebSocket connected")
 
+    smoother = PredictionSmoother()
+
     try:
         while True:
             data = await websocket.receive_json()
@@ -177,7 +215,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 continue
 
             result = await asyncio.to_thread(predict_mudra, img)
-            await websocket.send_json(result)
+            confirmed_label = smoother.update(result.get("label"), result.get("confidence", 0.0))
+
+            await websocket.send_json({**result, "confirmed_label": confirmed_label})
 
     except WebSocketDisconnect:
         print("❌ WebSocket disconnected")
+        smoother.window.clear()
