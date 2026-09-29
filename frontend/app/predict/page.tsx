@@ -21,6 +21,18 @@ export default function MudraPredictPage() {
     confidence: number
   } | null>(null)
 
+  // realtime-only: the raw, frame-by-frame guess (flickers) vs. the
+  // stabilized guess the backend only sets once it's held consistently
+  // across several frames
+  const [liveGuess, setLiveGuess] = useState<{
+    label: string | null
+    confidence: number
+  } | null>(null)
+  const [confirmedResult, setConfirmedResult] = useState<{
+    label: string
+    confidence: number
+  } | null>(null)
+
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
@@ -46,36 +58,30 @@ export default function MudraPredictPage() {
       ws.onopen = () => {
         console.log("✅ WS connected")
         setConnected(true)
+        setRunning(true)
         startStreaming()
       }
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data)
-        setResult(data)
+        setLiveGuess({ label: data.label, confidence: data.confidence ?? 0 })
+        if (data.confirmed_label) {
+          setConfirmedResult({
+            label: data.confirmed_label,
+            confidence: data.confidence ?? 0,
+          })
+        }
       }
 
       ws.onerror = (e) => {
         console.error("❌ WS error", e)
+        stopRealtime()
       }
 
       ws.onclose = (e) => {
         console.warn("⚠️ WS closed", e.code, e.reason)
         stopRealtime()
       }
-
-
-      ws.onopen = () => {
-        setConnected(true)
-        setRunning(true)
-        startStreaming()
-      }
-
-      ws.onmessage = (e) => {
-        setResult(JSON.parse(e.data))
-      }
-
-      ws.onclose = stopRealtime
-      ws.onerror = stopRealtime
     } catch {
       alert("Camera access denied")
     }
@@ -112,6 +118,8 @@ export default function MudraPredictPage() {
     wsRef.current?.close()
     setRunning(false)
     setConnected(false)
+    setLiveGuess(null)
+    setConfirmedResult(null)
   }
 
   /* ===============================
@@ -257,7 +265,47 @@ export default function MudraPredictPage() {
           <Card className="p-8 bg-gradient-to-br from-primary/10 to-accent/5">
             <h2 className="font-serif text-2xl mb-6">Prediction</h2>
 
-            {result ? (
+            {mode === "realtime" ? (
+              running ? (
+                confirmedResult ? (
+                  <>
+                    <p className="font-serif text-4xl text-primary mb-4">
+                      {confirmedResult.label}
+                    </p>
+
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex-1 h-2 bg-muted rounded-full">
+                        <div
+                          className="h-full bg-primary"
+                          style={{
+                            width: `${(confirmedResult.confidence * 100).toFixed(1)}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="font-semibold">
+                        {(confirmedResult.confidence * 100).toFixed(1)}%
+                      </span>
+                    </div>
+
+                    {liveGuess?.label && liveGuess.label !== confirmedResult.label && (
+                      <p className="text-sm text-muted-foreground">
+                        Detecting: {liveGuess.label}...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">
+                    {liveGuess?.label
+                      ? `Detecting: ${liveGuess.label}... hold the pose steady`
+                      : "Show a mudra to the camera"}
+                  </p>
+                )
+              ) : (
+                <p className="text-muted-foreground">
+                  Start camera to see predictions
+                </p>
+              )
+            ) : result ? (
               <>
                 <p className="font-serif text-4xl text-primary mb-4">
                   {result.label}
@@ -279,9 +327,7 @@ export default function MudraPredictPage() {
               </>
             ) : (
               <p className="text-muted-foreground">
-                {mode === "realtime"
-                  ? "Start camera to see predictions"
-                  : "Upload an image to predict"}
+                Upload an image to predict
               </p>
             )}
           </Card>
