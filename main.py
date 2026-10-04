@@ -202,23 +202,44 @@ async def websocket_endpoint(websocket: WebSocket):
 
     smoother = PredictionSmoother()
 
-    try:
+    # The client sends frames faster than a small instance can classify them.
+    # Reading and predicting in one loop made frames queue up until the
+    # connection was dropped (close code 1006), so frames are read in their
+    # own task and only the newest one is ever classified; stale ones are skipped.
+    latest_frame = None
+    frame_ready = asyncio.Event()
+
+    async def receive_frames():
+        nonlocal latest_frame
         while True:
             data = await websocket.receive_json()
-            img_b64 = data["image"]
+            img_bytes = base64.b64decode(data["image"])
+            img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
+            if img is not None:
+                latest_frame = img
+                frame_ready.set()
 
-            img_bytes = base64.b64decode(img_b64)
-            np_img = np.frombuffer(img_bytes, np.uint8)
-            img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+    receiver = asyncio.create_task(receive_frames())
 
-            if img is None:
+    try:
+        while not receiver.done():
+            try:
+                await asyncio.wait_for(frame_ready.wait(), timeout=1.0)
+            except asyncio.TimeoutError:
                 continue
+
+            frame_ready.clear()
+            img, latest_frame = latest_frame, None
 
             result = await asyncio.to_thread(predict_mudra, img)
             confirmed_label = smoother.update(result.get("label"), result.get("confidence", 0.0))
 
             await websocket.send_json({**result, "confirmed_label": confirmed_label})
 
+        receiver.result()  # re-raises WebSocketDisconnect (or the real error)
+
     except WebSocketDisconnect:
         print("❌ WebSocket disconnected")
+    finally:
+        receiver.cancel()
         smoother.window.clear()
