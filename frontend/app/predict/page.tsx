@@ -37,10 +37,49 @@ export default function MudraPredictPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const userStoppedRef = useRef(true)
 
   /* ===============================
      REALTIME LOGIC
   =============================== */
+
+  // The socket can drop (free-tier server cold start, network blip). That
+  // should not turn the camera off, so on an unexpected close we keep the
+  // camera running and reconnect; only the Stop button ends the session.
+  const connectWs = () => {
+    const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      console.log("✅ WS connected")
+      setConnected(true)
+    }
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      setLiveGuess({ label: data.label, confidence: data.confidence ?? 0 })
+      if (data.confirmed_label) {
+        setConfirmedResult({
+          label: data.confirmed_label,
+          confidence: data.confidence ?? 0,
+        })
+      }
+    }
+
+    ws.onerror = (e) => {
+      console.error("❌ WS error", e)
+    }
+
+    ws.onclose = (e) => {
+      console.warn("⚠️ WS closed", e.code, e.reason)
+      setConnected(false)
+      setLiveGuess(null)
+      setConfirmedResult(null)
+      if (userStoppedRef.current) return
+      reconnectTimerRef.current = setTimeout(connectWs, 1500)
+    }
+  }
 
   const startRealtime = async () => {
     try {
@@ -51,40 +90,15 @@ export default function MudraPredictPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
-
-      const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!)
-      wsRef.current = ws
-
-      ws.onopen = () => {
-        console.log("✅ WS connected")
-        setConnected(true)
-        setRunning(true)
-        startStreaming()
-      }
-
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data)
-        setLiveGuess({ label: data.label, confidence: data.confidence ?? 0 })
-        if (data.confirmed_label) {
-          setConfirmedResult({
-            label: data.confirmed_label,
-            confidence: data.confidence ?? 0,
-          })
-        }
-      }
-
-      ws.onerror = (e) => {
-        console.error("❌ WS error", e)
-        stopRealtime()
-      }
-
-      ws.onclose = (e) => {
-        console.warn("⚠️ WS closed", e.code, e.reason)
-        stopRealtime()
-      }
     } catch {
       alert("Camera access denied")
+      return
     }
+
+    userStoppedRef.current = false
+    setRunning(true)
+    connectWs()
+    startStreaming()
   }
 
   const startStreaming = () => {
@@ -97,10 +111,23 @@ export default function MudraPredictPage() {
       )
         return
 
+      const video = videoRef.current
+      if (!video.videoWidth) return
+
+      // Keep the camera's aspect ratio. Squashing the frame to a 160x160
+      // square (what the old image CNN needed) distorts the hand and makes
+      // hand detection fail.
+      const width = 320
+      const height = Math.round((video.videoHeight / video.videoWidth) * width)
+      if (canvasRef.current.width !== width || canvasRef.current.height !== height) {
+        canvasRef.current.width = width
+        canvasRef.current.height = height
+      }
+
       const ctx = canvasRef.current.getContext("2d")
       if (!ctx) return
 
-      ctx.drawImage(videoRef.current, 0, 0, 160, 160)
+      ctx.drawImage(video, 0, 0, width, height)
 
       const base64 = canvasRef.current
         .toDataURL("image/jpeg", 0.7)
@@ -111,9 +138,13 @@ export default function MudraPredictPage() {
   }
 
   const stopRealtime = () => {
+    userStoppedRef.current = true
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     if (intervalRef.current) clearInterval(intervalRef.current)
     if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach((t) => t.stop())
+      ;(videoRef.current.srcObject as MediaStream)
+        .getTracks()
+        .forEach((t) => t.stop())
     }
     wsRef.current?.close()
     setRunning(false)
@@ -155,6 +186,10 @@ export default function MudraPredictPage() {
     stopRealtime()
     setResult(null)
   }, [mode])
+
+  // leaving the page must end the session, otherwise the reconnect loop
+  // would keep running in the background
+  useEffect(() => () => stopRealtime(), [])
 
   return (
     <main className="pt-16">
@@ -229,8 +264,20 @@ export default function MudraPredictPage() {
 
                 <p className="text-sm mt-2">
                   Status:{" "}
-                  <span className={connected ? "text-green-600" : "text-red-600"}>
-                    {connected ? "Connected" : "Disconnected"}
+                  <span
+                    className={
+                      connected
+                        ? "text-green-600"
+                        : running
+                          ? "text-amber-600"
+                          : "text-red-600"
+                    }
+                  >
+                    {connected
+                      ? "Connected"
+                      : running
+                        ? "Connecting... the server may take up to a minute to wake up"
+                        : "Disconnected"}
                   </span>
                 </p>
               </>
@@ -267,7 +314,11 @@ export default function MudraPredictPage() {
 
             {mode === "realtime" ? (
               running ? (
-                confirmedResult ? (
+                !connected ? (
+                  <p className="text-muted-foreground">
+                    Connecting to the server...
+                  </p>
+                ) : confirmedResult ? (
                   <>
                     <p className="font-serif text-4xl text-primary mb-4">
                       {confirmedResult.label}
