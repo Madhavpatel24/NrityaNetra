@@ -5,11 +5,18 @@ import { Navbar } from "@/components/navbar"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Camera, Upload, StopCircle } from "lucide-react"
+import type { HandLandmarker } from "@mediapipe/tasks-vision"
+import { createHandLandmarker } from "@/lib/mudra/hand-landmarker"
+import { loadClassifier, type TreeClassifier } from "@/lib/mudra/classifier"
+import { computeFeatures } from "@/lib/mudra/features"
+import { PredictionSmoother } from "@/lib/mudra/smoother"
 
-type Mode = "realtime" | "image"
+// "device": hand detection and classification run in the browser (fast, no
+// server round trip). "realtime": frames are sent to the server (fallback).
+type Mode = "device" | "realtime" | "image"
 
 export default function MudraPredictPage() {
-  const [mode, setMode] = useState<Mode>("realtime")
+  const [mode, setMode] = useState<Mode>("device")
   const [running, setRunning] = useState(false)
   const [connected, setConnected] = useState(false)
 
@@ -39,6 +46,17 @@ export default function MudraPredictPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const userStoppedRef = useRef(true)
+
+  // on-device mode
+  const [deviceReady, setDeviceReady] = useState(false)
+  const [deviceError, setDeviceError] = useState<string | null>(null)
+  const [deviceStats, setDeviceStats] = useState<{
+    fps: number
+    delegate: "GPU" | "CPU"
+  } | null>(null)
+  const deviceActiveRef = useRef(false)
+  const rafRef = useRef<number | null>(null)
+  const landmarkerRef = useRef<HandLandmarker | null>(null)
 
   /* ===============================
      REALTIME LOGIC
@@ -101,6 +119,104 @@ export default function MudraPredictPage() {
     startStreaming()
   }
 
+  const runDeviceLoop = (
+    landmarker: HandLandmarker,
+    classifier: TreeClassifier,
+    delegate: "GPU" | "CPU"
+  ) => {
+    const smoother = new PredictionSmoother()
+    let lastVideoTime = -1
+    let lastUiUpdate = 0
+    let framesSinceStats = 0
+    let statsStart = performance.now()
+
+    const tick = () => {
+      if (!deviceActiveRef.current) return
+      const video = videoRef.current
+
+      // only process when the camera has produced a new frame
+      if (video && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime
+        const now = performance.now()
+
+        let label: string | null = null
+        let confidence = 0
+        const detected = landmarker.detect(video)
+        if (detected.landmarks.length > 0) {
+          const p = classifier.predict(computeFeatures(detected.landmarks[0]))
+          label = p.label
+          confidence = p.confidence
+        }
+
+        const confirmed = smoother.update(label, confidence, now)
+        framesSinceStats++
+
+        // the model runs every frame; the screen only needs ~15 updates/second
+        if (now - lastUiUpdate > 66) {
+          lastUiUpdate = now
+          setLiveGuess({ label, confidence })
+          if (confirmed) {
+            setConfirmedResult((prev) => ({
+              label: confirmed,
+              confidence:
+                label === confirmed
+                  ? confidence
+                  : prev?.label === confirmed
+                    ? prev.confidence
+                    : confidence,
+            }))
+          }
+        }
+        if (now - statsStart > 1000) {
+          setDeviceStats({
+            fps: Math.round((framesSinceStats * 1000) / (now - statsStart)),
+            delegate,
+          })
+          framesSinceStats = 0
+          statsStart = now
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+  }
+
+  const startDevice = async () => {
+    setDeviceError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      })
+      if (videoRef.current) videoRef.current.srcObject = stream
+    } catch {
+      alert("Camera access denied")
+      return
+    }
+
+    deviceActiveRef.current = true
+    setRunning(true)
+
+    try {
+      const [{ landmarker, delegate }, classifier] = await Promise.all([
+        createHandLandmarker("IMAGE"),
+        loadClassifier("/model/mudra_meta.json", "/model/mudra_trees.bin"),
+      ])
+      if (!deviceActiveRef.current) {
+        landmarker.close() // Stop was pressed while the model was loading
+        return
+      }
+      landmarkerRef.current = landmarker
+      setDeviceReady(true)
+      runDeviceLoop(landmarker, classifier, delegate)
+    } catch (e) {
+      console.error("❌ on-device model failed to load", e)
+      stopRealtime()
+      setDeviceError(
+        "Couldn't load the on-device model. Switch to Realtime (server) instead."
+      )
+    }
+  }
+
   const startStreaming = () => {
     intervalRef.current = setInterval(() => {
       if (
@@ -139,6 +255,13 @@ export default function MudraPredictPage() {
 
   const stopRealtime = () => {
     userStoppedRef.current = true
+    deviceActiveRef.current = false
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
+    landmarkerRef.current?.close()
+    landmarkerRef.current = null
+    setDeviceReady(false)
+    setDeviceStats(null)
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     if (intervalRef.current) clearInterval(intervalRef.current)
     if (videoRef.current?.srcObject) {
@@ -185,7 +308,11 @@ export default function MudraPredictPage() {
   useEffect(() => {
     stopRealtime()
     setResult(null)
+    setDeviceError(null)
   }, [mode])
+
+  const isLive = mode !== "image"
+  const liveReady = mode === "device" ? deviceReady : connected
 
   // leaving the page must end the session, otherwise the reconnect loop
   // would keep running in the background
@@ -206,12 +333,21 @@ export default function MudraPredictPage() {
           {/* MODE SWITCH */}
           <div className="mt-6 flex gap-3">
             <Button
+              variant={mode === "device" ? "default" : "outline"}
+              onClick={() => setMode("device")}
+              className="gap-2"
+            >
+              <Camera className="w-4 h-4" />
+              Realtime
+            </Button>
+
+            <Button
               variant={mode === "realtime" ? "default" : "outline"}
               onClick={() => setMode("realtime")}
               className="gap-2"
             >
               <Camera className="w-4 h-4" />
-              Realtime
+              Realtime (server)
             </Button>
 
             <Button
@@ -232,10 +368,10 @@ export default function MudraPredictPage() {
           {/* LEFT CARD */}
           <Card className="p-8">
             <h2 className="font-serif text-2xl mb-6">
-              {mode === "realtime" ? "Live Camera" : "Upload Image"}
+              {isLive ? "Live Camera" : "Upload Image"}
             </h2>
 
-            {mode === "realtime" ? (
+            {isLive ? (
               <>
                 <video
                   ref={videoRef}
@@ -247,7 +383,10 @@ export default function MudraPredictPage() {
                 <canvas ref={canvasRef} width="160" height="160" className="hidden" />
 
                 {!running ? (
-                  <Button onClick={startRealtime} className="w-full gap-2">
+                  <Button
+                    onClick={mode === "device" ? startDevice : startRealtime}
+                    className="w-full gap-2"
+                  >
                     <Camera className="w-4 h-4" />
                     Start
                   </Button>
@@ -266,20 +405,30 @@ export default function MudraPredictPage() {
                   Status:{" "}
                   <span
                     className={
-                      connected
+                      liveReady
                         ? "text-green-600"
                         : running
                           ? "text-amber-600"
                           : "text-red-600"
                     }
                   >
-                    {connected
-                      ? "Connected"
-                      : running
-                        ? "Connecting... the server may take up to a minute to wake up"
-                        : "Disconnected"}
+                    {mode === "device"
+                      ? deviceReady
+                        ? `On-device${deviceStats ? ` · ${deviceStats.fps} fps · ${deviceStats.delegate}` : ""}`
+                        : running
+                          ? "Loading the model... the first time downloads about 10 MB"
+                          : "Stopped"
+                      : connected
+                        ? "Connected"
+                        : running
+                          ? "Connecting... the server may take up to a minute to wake up"
+                          : "Disconnected"}
                   </span>
                 </p>
+
+                {deviceError && (
+                  <p className="text-sm mt-2 text-red-600">{deviceError}</p>
+                )}
               </>
             ) : (
               <>
@@ -312,11 +461,13 @@ export default function MudraPredictPage() {
           <Card className="p-8 bg-gradient-to-br from-primary/10 to-accent/5">
             <h2 className="font-serif text-2xl mb-6">Prediction</h2>
 
-            {mode === "realtime" ? (
+            {isLive ? (
               running ? (
-                !connected ? (
+                !liveReady ? (
                   <p className="text-muted-foreground">
-                    Connecting to the server...
+                    {mode === "device"
+                      ? "Loading the on-device model..."
+                      : "Connecting to the server..."}
                   </p>
                 ) : confirmedResult ? (
                   <>
