@@ -1,3 +1,11 @@
+import os
+
+# Classifying one frame is ~1 ms of work; the default multi-thread pool costs
+# more to coordinate than it saves (150 ms vs 16 ms measured). Must be set
+# before numpy/scikit-learn load so every worker thread picks it up.
+for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_var, "1")
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import base64
@@ -5,7 +13,6 @@ import cv2
 import numpy as np
 import pickle
 import asyncio
-import os
 import urllib.request
 import math
 from collections import deque, Counter
