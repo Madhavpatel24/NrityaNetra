@@ -146,7 +146,7 @@ type IndiaDanceMapProps = {
 }
 
 /* mapping (same as before) */
-const STATE_TO_DANCE: Record<string, string> = {
+export const STATE_TO_DANCE: Record<string, string> = {
   "Andhra Pradesh": "Kuchipudi",
   "Arunachal Pradesh": "Ponung",
   "Assam": "Sattriya",
@@ -185,7 +185,7 @@ const STATE_TO_DANCE: Record<string, string> = {
 }
 
 /* your actual pages */
-const DANCE_ROUTES: Record<string, string> = {
+export const DANCE_ROUTES: Record<string, string> = {
   Bharatanatyam: "/dancesofIndia/bharatanatyam",
   Kathak: "/dancesofIndia/kathak",
   Kuchipudi: "/dancesofIndia/kuchipudi",
@@ -198,7 +198,7 @@ const DANCE_ROUTES: Record<string, string> = {
   // Manipuri: "/dancesofIndia/manipuri",
 }
 
-function normalizeName(s?: string) {
+export function normalizeName(s?: string) {
   if (!s) return ""
   return String(s)
     .trim()
@@ -216,7 +216,7 @@ function slugifyDance(dance?: string) {
     .replace(/(^-|-$)/g, "")
 }
 
-function getDanceForState(stateName?: string) {
+export function getDanceForState(stateName?: string) {
   const n = normalizeName(stateName)
   if (!n) return ""
   if (STATE_TO_DANCE[n]) return STATE_TO_DANCE[n]
@@ -237,7 +237,7 @@ function getDanceForState(stateName?: string) {
   return key ? STATE_TO_DANCE[key] : ""
 }
 
-function getDanceImage(dance?: string) {
+export function getDanceImage(dance?: string) {
   const slug = slugifyDance(dance)
   return slug ? `/images/dances/${slug}.jpg` : "/images/dances/placeholder.jpg"
 }

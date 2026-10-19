@@ -1,339 +1,258 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import BackHomeButton from "@/components/back-home-button"
-import Link from "next/link"
-import { Navbar } from "@/components/navbar"
 import dynamic from "next/dynamic"
+import Link from "next/link"
+import { ArrowUpRight } from "lucide-react"
+import { Navbar } from "@/components/navbar"
+import { Reveal } from "@/components/reveal"
+import { SectionNav } from "@/components/section-nav"
+import { DANCES } from "@/lib/dances/data"
 
-const IndiaDanceMap = dynamic(() => import("@/components/india-dance-map"), {
+const Atlas = dynamic(() => import("@/components/atlas"), {
   ssr: false,
+  loading: () => <div className="h-[520px] animate-pulse rounded-3xl bg-muted/60" aria-hidden />,
 })
 
-const HISTORY_SECTIONS = [
-  { id: "natyashastra", title: "Origins", emoji: "📖" },
-  { id: "temples-courts", title: "Temples & Courts", emoji: "🏛️" },
-  { id: "explore-india", title: "Explore India", emoji: "🗺️" },
-  { id: "mudras-abhinaya", title: "Mudras", emoji: "🤲" },
-  { id: "significance", title: "Significance", emoji: "✨" },
+const SECTIONS = [
+  { id: "origins", title: "Origins" },
+  { id: "temples-courts", title: "Temples & courts" },
+  { id: "explore-india", title: "Explore India" },
+  { id: "mudras-abhinaya", title: "Mudras" },
+  { id: "significance", title: "Significance" },
 ]
 
-// small decorative temple divider
-function TempleDivider() {
+const FORMS = [
+  { slug: "bharatanatyam", desc: "Geometry, precision and expressive abhinaya." },
+  { slug: "kathak", desc: "Fast spins, storytelling and intricate footwork." },
+  { slug: "kathakali", desc: "Highly stylised makeup, costumes and gestures." },
+  { slug: "garba", desc: "A circular dance of Navratri, with claps and spins." },
+  { slug: "bhangra", desc: "Energetic harvest dance with powerful rhythms." },
+  { slug: "lavani", desc: "Rhythm-driven dance known for strong storytelling." },
+]
+
+const LANGUAGE = [
+  {
+    title: "Hasta mudras",
+    img: "/indian-classical-dance-hand-mudra-gestures.jpg",
+    desc: "Hand gestures that form a symbolic storytelling language.",
+  },
+  {
+    title: "Nava rasas",
+    img: "/indian-dancer-expressing-emotions-rasas-classical-.jpg",
+    desc: "Nine emotional expressions portrayed with depth and nuance.",
+  },
+  {
+    title: "Rhythm & tala",
+    img: "/indian-classical-music-instruments-tabla-rhythm-ta.jpg",
+    desc: "Rhythmic cycles that structure movement and expression.",
+  },
+]
+
+const SIGNIFICANCE = [
+  {
+    title: "Living spiritual heritage",
+    body: "Classical Indian dance preserves centuries of devotional practice, mythology and philosophical thought. Every performance carries echoes of temple rituals, royal courts and the guru–shishya parampara (teacher–student lineage).",
+  },
+  {
+    title: "Artistic & emotional literacy",
+    body: "Training refines rhythm, balance and body awareness, while abhinaya cultivates empathy and emotional depth. Dancers learn to embody a wide spectrum of human experience with sensitivity and precision.",
+  },
+  {
+    title: "Cultural identity & continuity",
+    body: "For communities in India and the diaspora, these forms are anchors of identity. Festivals, arangetrams and recitals become spaces where tradition is reinterpreted for new generations without losing its core.",
+  },
+  {
+    title: "Global dialogue",
+    body: "Today, classical Indian dance collaborates with contemporary styles, theatre and digital media, creating a dialogue between past and present, local and global.",
+  },
+]
+
+function Chapter({
+  n,
+  id,
+  title,
+  lede,
+  children,
+}: {
+  n: string
+  id: string
+  title: string
+  lede?: string
+  children: React.ReactNode
+}) {
   return (
-    <div className="flex items-center justify-center mb-6">
-      <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
-      <span className="mx-3 text-amber-700 text-xl">🛕</span>
-      <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
-    </div>
+    <section id={id} className="mx-auto max-w-5xl scroll-mt-32 px-4 py-20 md:px-6 md:py-28">
+      <Reveal className="mb-12">
+        <div className="flex items-baseline gap-5">
+          <span className="font-serif text-5xl text-border md:text-6xl">{n}</span>
+          <h2 className="font-serif text-3xl text-foreground md:text-4xl">{title}</h2>
+        </div>
+        {lede && <p className="mt-4 max-w-2xl leading-relaxed text-muted-foreground md:ml-[5.5rem]">{lede}</p>}
+      </Reveal>
+      {children}
+    </section>
   )
 }
 
 export default function HistoryPage() {
-  const [activeSection, setActiveSection] = useState<string>("natyashastra")
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = document.querySelectorAll("[data-section]")
-      let current = "natyashastra"
-
-      sections.forEach((section) => {
-        const sectionTop = (section as HTMLElement).offsetTop - 140
-        if (window.scrollY >= sectionTop) {
-          current = section.getAttribute("data-section") || current
-        }
-      })
-
-      setActiveSection(current)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    handleScroll()
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  const scrollToSection = (id: string) => {
-    const el = document.querySelector(`[data-section="${id}"]`)
-    el?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }
-
   return (
-    <main className="w-full">
+    <main className="paper-grain min-h-screen overflow-x-clip">
       <Navbar />
-      <div className="px-4 py-28 md:py-32">
-        <section className="max-w-5xl mx-auto">
-          {/* HERO */}
-          <div className="mb-8">
-            <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden mb-8 border border-border">
-              <img
-                src="/historypageimage.jpg"
-                alt="Classical Indian dance performance"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-            </div>
 
-            <h1 className="font-serif text-4xl md:text-5xl text-pretty mb-2 text-center">
-              Classical Indian Dance
-            </h1>
-            <p className="text-muted-foreground text-lg text-center">
-              A profound artistic tradition spanning millennia
+      {/* Hero */}
+      <header className="mx-auto max-w-5xl px-4 pb-16 pt-32 text-center md:px-6 md:pb-20 md:pt-40">
+        <div className="rise-in">
+          <p className="eyebrow mb-5">A history in outline</p>
+          <h1 className="font-serif text-5xl leading-[1.05] text-foreground md:text-7xl">
+            Classical <em className="text-accent">Indian</em> dance
+          </h1>
+          <p className="font-deva mt-6 text-2xl text-accent/90">भारतीय शास्त्रीय नृत्य</p>
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            A profound artistic tradition spanning millennia, carried through texts, temples, courts and teachers.
+          </p>
+        </div>
+        <div
+          className="rise-in mt-14 overflow-hidden rounded-[2rem] border border-border bg-muted shadow-[0_30px_60px_-35px_rgba(74,44,0,0.55)]"
+          style={{ animationDelay: "140ms" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/historypageimage.jpg"
+            alt="Classical Indian dance performance"
+            className="aspect-[16/8] w-full object-cover"
+          />
+        </div>
+      </header>
+
+      <SectionNav sections={SECTIONS} />
+
+      {/* 01 Origins */}
+      <Chapter n="01" id="origins" title="Origins and the Natyashastra">
+        <Reveal className="grid items-center gap-10 md:grid-cols-2 md:gap-14">
+          <div className="space-y-5 text-lg leading-relaxed text-muted-foreground">
+            <p>
+              Attributed to Sage Bharata, the Natyashastra is a foundational text codifying technique, aesthetics,
+              dramaturgy and rasa theory.
+            </p>
+            <p>
+              This ancient treatise remains the philosophical and technical bedrock for all classical Indian dance
+              forms, unifying movement, music and emotion.
             </p>
           </div>
-
-          {/* HORIZONTAL NAV FOR HISTORY SECTIONS */}
-          <div className="mb-10 border-b border-border pb-3">
-            <div className="flex gap-2 overflow-x-auto py-1 justify-center">
-              {HISTORY_SECTIONS.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => scrollToSection(section.id)}
-                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-sm sm:text-base whitespace-nowrap transition-colors border ${
-                    activeSection === section.id
-                      ? "bg-primary/10 text-primary border-primary"
-                      : "bg-card text-muted-foreground border-border hover:text-foreground"
-                  }`}
-                >
-                  <span>{section.emoji}</span>
-                  <span>{section.title}</span>
-                </button>
-              ))}
-            </div>
+          <div className="overflow-hidden rounded-3xl border border-border bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/ancient-sanskrit-text-natyashastra-manuscript-indi.jpg"
+              alt="Natyashastra manuscript"
+              className="aspect-[4/3] w-full object-cover"
+            />
           </div>
+        </Reveal>
+      </Chapter>
 
-          {/* ORIGINS */}
-          <div
-            data-section="natyashastra"
-            className="rounded-2xl glass-panel p-8 border border-border mb-12 bg-amber-50/80"
-          >
-            <h2 className="font-serif text-3xl mb-2 text-center">Origins and the Natyashastra</h2>
-            <TempleDivider />
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  Attributed to Sage Bharata, the Natyashastra is a foundational text
-                  codifying technique, aesthetics, dramaturgy, and rasa theory.
-                </p>
-                <p className="text-muted-foreground leading-relaxed">
-                  This ancient treatise remains the philosophical and technical bedrock
-                  for all classical Indian dance forms, unifying movement, music, and emotion.
-                </p>
-              </div>
-
-              <div className="rounded-xl overflow-hidden border border-border h-80">
-                <img
-                  src="/ancient-sanskrit-text-natyashastra-manuscript-indi.jpg"
-                  alt="Natyashastra manuscript"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* TEMPLES & COURTS */}
-          <div
-            data-section="temples-courts"
-            className="rounded-2xl glass-panel p-8 border border-border mb-12 bg-orange-50/80"
-          >
-            <h2 className="font-serif text-3xl mb-2 text-center">From Temples to Courts</h2>
-            <TempleDivider />
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="rounded-xl border border-border p-6 bg-card overflow-hidden">
-                <div className="w-full h-60 rounded-lg mb-4 overflow-hidden border border-border">
-                  <img
-                    src="/temple-architecture-indian-classical-dance-ritual-.jpg"
-                    alt="Temple traditions"
-                    className="w-full h-full object-cover"
-                  />
+      {/* 02 Temples & courts */}
+      <div className="border-y border-border/70 bg-card/40">
+        <Chapter n="02" id="temples-courts" title="From temples to courts">
+          <div className="grid gap-8 md:grid-cols-2 md:gap-10">
+            {[
+              {
+                title: "Temple traditions",
+                img: "/temple-architecture-indian-classical-dance-ritual-.jpg",
+                body: "Dancers performed sacred rituals, storytelling and spiritual embodiment through mudras and abhinaya, offering their art as devotion within temple spaces.",
+              },
+              {
+                title: "Royal patronage",
+                img: "/royal-palace-court-indian-classical-dancers-musici.jpg",
+                body: "In royal courts, technique flourished with refined repertoire, musical innovation, and cross-pollination with poetry, literature and theatre.",
+              },
+            ].map((c, i) => (
+              <Reveal key={c.title} delay={i * 100}>
+                <div className="overflow-hidden rounded-3xl border border-border bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.img} alt={c.title} className="aspect-[4/3] w-full object-cover" />
                 </div>
-                <h3 className="font-serif text-2xl mb-3 text-center">Temple Traditions</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Dancers performed sacred rituals, storytelling, and spiritual embodiment
-                  through mudras and abhinaya, offering their art as devotion within temple spaces.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-border p-6 bg-card overflow-hidden">
-                <div className="w-full h-60 rounded-lg mb-4 overflow-hidden border border-border">
-                  <img
-                    src="/royal-palace-court-indian-classical-dancers-musici.jpg"
-                    alt="Royal patronage"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h3 className="font-serif text-2xl mb-3 text-center">Royal Patronage</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  In royal courts, technique flourished with refined repertoire, musical innovation,
-                  and cross-pollination with poetry, literature, and theatre.
-                </p>
-              </div>
-            </div>
+                <h3 className="mt-6 font-serif text-2xl text-foreground">{c.title}</h3>
+                <p className="mt-2 leading-relaxed text-muted-foreground">{c.body}</p>
+              </Reveal>
+            ))}
           </div>
-
-          {/* EXPLORE INDIA: MAP + REGIONAL FORMS MERGED */}
-          <div
-            data-section="explore-india"
-            className="rounded-2xl glass-panel p-8 border border-border mb-12 bg-rose-50/80"
-          >
-            <h2 className="font-serif text-3xl mb-2 text-center">Explore India</h2>
-            <TempleDivider />
-            <p className="text-muted-foreground mb-6 leading-relaxed text-center">
-              Use the interactive map to see where classical forms originated across India, then
-              explore each dance style connected to its home region.
-            </p>
-
-            {/* Map */}
-            <div className="w-full h-[550px] md:h-[665px] rounded-xl overflow-hidden mb-8 border border-border bg-card">
-              <IndiaDanceMap />
-            </div>
-
-            {/* Regional forms below map */}
-            <h3 className="font-serif text-2xl mb-2 text-center">Regional Forms at a Glance</h3>
-            <p className="text-muted-foreground mb-6 leading-relaxed text-center">
-              Here are some of the major classical forms and the states they are most closely
-              associated with. Tap a card to explore that style in more detail.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              {[
-                {
-                  name: "Bharatanatyam (Tamil Nadu)",
-                  desc: "Geometry, precision, and expressive abhinaya.",
-                  link: "/dancesofIndia/bharatanatyam",
-                },
-                {
-                  name: "Garba (Gujarat)",
-                  desc: "Vibrant circular dance celebrated during Navratri with claps and spins.",
-                  link: "/dancesofIndia/garba",
-                },
-                {
-                  name: "Kathak (North India)",
-                  desc: "Fast spins, storytelling, and intricate footwork.",
-                  link: "/dancesofIndia/kathak",
-                },
-                {
-                  name: "Bhangra (Punjab)",
-                  desc: "Energetic harvest and festival dance with powerful rhythms.",
-                  link: "/dancesofIndia/bhangra",
-                },
-                {
-                  name: "Kathakali (Kerala)",
-                  desc: "Highly stylized makeup, costumes, and gestures.",
-                  link: "/dancesofIndia/kathakali",
-                },
-                {
-                  name: "Lavani (Maharashtra)",
-                  desc: "Expressive, rhythm-driven dance known for strong storytelling.",
-                  link: "/dancesofIndia/lavani",
-                },
-              ].map((form, idx) => (
-                <Link
-                  key={idx}
-                  href={form.link}
-                  className="rounded-lg border border-border p-4 bg-card hover:border-primary transition-colors block"
-                >
-                  <h4 className="font-serif font-semibold text-lg text-center">{form.name}</h4>
-                  <p className="text-sm text-muted-foreground mt-2 text-center">{form.desc}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* MUDRAS & ABHINAYA */}
-          <div
-            data-section="mudras-abhinaya"
-            className="rounded-2xl glass-panel p-8 border border-border mb-12 bg-yellow-50/80"
-          >
-            <h2 className="font-serif text-3xl mb-2 text-center">Mudras and Abhinaya</h2>
-            <TempleDivider />
-
-            <div className="grid md:grid-cols-3 gap-4">
-              {[
-                {
-                  title: "Hasta Mudras",
-                  img: "/indian-classical-dance-hand-mudra-gestures.jpg",
-                  desc: "Hand gestures that form a symbolic storytelling language.",
-                },
-                {
-                  title: "Nava Rasas",
-                  img: "/indian-dancer-expressing-emotions-rasas-classical-.jpg",
-                  desc: "Nine emotional expressions portrayed with depth and nuance.",
-                },
-                {
-                  title: "Rhythm & Tala",
-                  img: "/indian-classical-music-instruments-tabla-rhythm-ta.jpg",
-                  desc: "Complex rhythmic cycles that structure movement and expression.",
-                },
-              ].map((item, idx) => (
-                <div key={idx} className="rounded-lg border border-border p-6 bg-card">
-                  <div className="w-full h-60 rounded-lg mb-4 overflow-hidden border border-border">
-                    <img src={item.img} alt={item.title} className="w-full h-full object-cover" />
-                  </div>
-                  <h4 className="font-serif text-lg font-semibold mb-2 text-center">{item.title}</h4>
-                  <p className="text-sm text-muted-foreground text-center">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* SIGNIFICANCE & IMPORTANCE */}
-          <div
-            data-section="significance"
-            className="rounded-2xl glass-panel p-8 border border-border mb-12 bg-slate-50/80"
-          >
-            <h2 className="font-serif text-3xl mb-2 text-center">Significance & Cultural Importance</h2>
-            <TempleDivider />
-
-            <div className="space-y-6">
-              <div className="bg-card rounded-xl p-6 border-l-4 border-primary">
-                <h3 className="text-2xl font-serif font-semibold mb-2 text-center">
-                  Living Spiritual Heritage
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-center">
-                  Classical Indian dance preserves centuries of devotional practice, mythology,
-                  and philosophical thought. Every performance carries echoes of temple rituals,
-                  royal courts, and guru–shishya parampara (teacher–student lineage).
-                </p>
-              </div>
-
-              <div className="bg-card rounded-xl p-6 border-l-4 border-primary/70">
-                <h3 className="text-2xl font-serif font-semibold mb-2 text-center">
-                  Artistic & Emotional Literacy
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-center">
-                  Training in classical dance refines rhythm, balance, and body awareness, while
-                  abhinaya cultivates empathy and emotional depth. Dancers learn to embody a wide
-                  spectrum of human experience with sensitivity and precision.
-                </p>
-              </div>
-
-              <div className="bg-card rounded-xl p-6 border-l-4 border-primary/60">
-                <h3 className="text-2xl font-serif font-semibold mb-2 text-center">
-                  Cultural Identity & Continuity
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-center">
-                  For communities in India and the diaspora, these forms serve as anchors of
-                  identity. Festivals, arangetrams, and recitals become spaces where tradition is
-                  reinterpreted for new generations without losing its core.
-                </p>
-              </div>
-
-              <div className="bg-card rounded-xl p-6 border-l-4 border-primary/50">
-                <h3 className="text-2xl font-serif font-semibold mb-2 text-center">
-                  Global Dialogue
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-center">
-                  Today, classical Indian dance collaborates with contemporary styles, theatre,
-                  and digital media, creating a dialogue between past and present, local and
-                  global. It stands as a testament to how heritage can evolve while remaining
-                  deeply rooted.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        </Chapter>
       </div>
+
+      {/* 03 Explore India */}
+      <section id="explore-india" className="mx-auto max-w-7xl scroll-mt-32 px-4 py-20 md:px-6 md:py-28 lg:px-8">
+        <Reveal className="mx-auto mb-12 max-w-5xl">
+          <div className="flex items-baseline gap-5">
+            <span className="font-serif text-5xl text-border md:text-6xl">03</span>
+            <h2 className="font-serif text-3xl text-foreground md:text-4xl">Explore India</h2>
+          </div>
+          <p className="mt-4 max-w-2xl leading-relaxed text-muted-foreground md:ml-[5.5rem]">
+            See where each tradition belongs, then open its page to read the story in full.
+          </p>
+        </Reveal>
+        <Atlas />
+
+        <ul className="mx-auto mt-20 grid max-w-5xl divide-y divide-border border-y border-border md:grid-cols-2 md:divide-y-0 md:gap-x-14">
+          {FORMS.map((f) => {
+            const d = DANCES[f.slug]
+            return (
+              <li key={f.slug} className="md:border-b md:border-border md:last:border-b-0 md:[&:nth-last-child(2)]:border-b-0">
+                <Link href={`/dancesofIndia/${f.slug}`} className="group flex items-center justify-between gap-4 py-6">
+                  <span>
+                    <span className="font-serif text-2xl text-foreground transition group-hover:text-accent">{d.name}</span>
+                    <span className="ml-3 text-xs uppercase tracking-widest text-muted-foreground">{d.state}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">{f.desc}</span>
+                  </span>
+                  <ArrowUpRight
+                    className="h-5 w-5 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      {/* 04 Mudras & abhinaya */}
+      <div className="border-y border-border/70 bg-card/40">
+        <Chapter n="04" id="mudras-abhinaya" title="Mudras and abhinaya">
+          <ul className="grid gap-8 md:grid-cols-3">
+            {LANGUAGE.map((l, i) => (
+              <li key={l.title}>
+                <Reveal delay={i * 90}>
+                  <div className="overflow-hidden rounded-3xl border border-border bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={l.img} alt={l.title} className="aspect-[4/5] w-full object-cover" />
+                  </div>
+                  <h3 className="mt-5 font-serif text-xl text-foreground">{l.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{l.desc}</p>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+          <Reveal className="mt-12">
+            <Link href="/predict" className="inline-flex items-center gap-1.5 text-sm font-medium text-accent underline-offset-4 hover:underline">
+              Try a mudra with the AI studio <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Reveal>
+        </Chapter>
+      </div>
+
+      {/* 05 Significance */}
+      <Chapter n="05" id="significance" title="Significance & cultural importance">
+        <ol className="grid gap-x-16 gap-y-12 md:grid-cols-2">
+          {SIGNIFICANCE.map((s, i) => (
+            <li key={s.title}>
+              <Reveal delay={(i % 2) * 90}>
+                <p className="eyebrow mb-2">{String(i + 1).padStart(2, "0")}</p>
+                <h3 className="font-serif text-2xl text-foreground">{s.title}</h3>
+                <p className="mt-3 leading-relaxed text-muted-foreground">{s.body}</p>
+              </Reveal>
+            </li>
+          ))}
+        </ol>
+      </Chapter>
     </main>
   )
 }

@@ -47,6 +47,13 @@
 
   --glass: rgba(255, 248, 225, 0.25);
   --glass-border: rgba(255, 248, 225, 0.35);
+
+  /* India map ("atlas") */
+  --atlas-land: #f1e3c9;
+  --atlas-classical: #ecc98a;
+  --atlas-hover: #f4a300;
+  --atlas-stroke: #b89468;
+  --atlas-stroke-strong: #6b4423;
 }
 
 .dark {
@@ -66,6 +73,12 @@
   --popover-foreground: var(--foreground);
   --footer: #1e1510;
   --footer-foreground: #f5e6d3;
+
+  --atlas-land: #4f3b28;
+  --atlas-classical: #7a5a2c;
+  --atlas-hover: #f9c74f;
+  --atlas-stroke: #8a6a45;
+  --atlas-stroke-strong: #fff8e1;
 }
 
 @theme inline {
@@ -110,6 +123,36 @@
 }
 
 @layer utilities {
+  /* small tracked-out label used above headings */
+  .eyebrow {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .font-deva {
+    font-family: var(--font-deva), var(--font-playfair), serif;
+  }
+  /* temple-arch silhouette for photographs */
+  .arch-mask {
+    border-radius: 999px 999px 1.25rem 1.25rem / 52% 52% 1.25rem 1.25rem;
+    overflow: hidden;
+  }
+  /* very faint paper grain, kept subtle so text stays crisp */
+  .paper-grain {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.29  0 0 0 0 0.17  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .rise-in {
+    animation: rise-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rise-in { animation: none; }
+  }
   .glass-panel {
     background-color: var(--glass);
     backdrop-filter: blur(10px);

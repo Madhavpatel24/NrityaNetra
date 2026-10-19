@@ -1,313 +1,254 @@
-
 "use client"
 
-import React, { useState, useCallback } from "react"
 import dynamic from "next/dynamic"
+import Link from "next/link"
+import { ArrowRight, ArrowUpRight } from "lucide-react"
+import { Reveal } from "@/components/reveal"
 import { Navbar } from "@/components/navbar"
-import { ArrowRight } from "lucide-react"
 
-// dynamic import of map (client only)
-const IndiaDanceMap = dynamic(() => import("@/components/india-dance-map"), { ssr: false })
+const Atlas = dynamic(() => import("@/components/atlas"), {
+  ssr: false,
+  loading: () => <div className="h-[520px] animate-pulse rounded-3xl bg-muted/60" aria-hidden />,
+})
 
-// small decorative temple divider (to echo your history page vibe)
-function TempleDivider() {
-  return (
-    <div className="flex items-center justify-center my-4">
-      <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
-      <span className="mx-3 text-amber-800 text-xl">🛕</span>
-      <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
-    </div>
-  )
-}
+const CHAIN = [
+  { deva: "हस्त", word: "Hasta", meaning: "the hand" },
+  { deva: "दृष्टि", word: "Drishti", meaning: "the gaze" },
+  { deva: "मनः", word: "Manah", meaning: "the mind" },
+  { deva: "भाव", word: "Bhava", meaning: "the feeling" },
+  { deva: "रस", word: "Rasa", meaning: "the essence" },
+]
+
+const INDEX = [
+  {
+    n: "01",
+    title: "Explore",
+    text: "Walk through India's dance traditions, state by state, with the stories and costumes that shaped them.",
+    href: "/explore",
+  },
+  {
+    n: "02",
+    title: "Learn",
+    text: "Start with the hand. A gentle introduction to mudras, their names and what they stand for.",
+    href: "/learn",
+  },
+  {
+    n: "03",
+    title: "Practise with AI",
+    text: "Show a mudra to your camera and see whether it is recognised, with an honest note on how sure we are.",
+    href: "/predict",
+  },
+]
+
+const STRIP = [
+  { name: "Kartarimukha", gloss: "Scissors face", img: "kartarimukha" },
+  { name: "Mayura", gloss: "Peacock", img: "mayura" },
+  { name: "Trishula", gloss: "Trident", img: "trishula" },
+  { name: "Mukula", gloss: "Bud", img: "mukula" },
+]
 
 export default function HomeClient() {
-  const [hover, setHover] = useState<{ state?: string; dance?: string } | null>(null)
-
-  const handleMapHover = useCallback((stateName: string, dance: string) => {
-    setHover({ state: stateName, dance })
-  }, [])
-
-  const handleMapLeave = useCallback(() => {
-    setHover(null)
-  }, [])
-
   return (
-    <>
+    <main className="paper-grain overflow-x-clip">
       <Navbar />
-
-      {/* HERO SECTION WITH VIDEO */}
-<section
-  aria-label="Welcome"
-  className="relative min-h-[70vh] md:min-h-[90vh] overflow-hidden bg-black"
->
-  {/* Background Video */}
-  <video
-    className="absolute inset-0 w-full h-full object-cover"
-    autoPlay
-    loop
-    muted
-    playsInline
-    preload="auto"
-    style={{ filter: "brightness(0.5) saturate(0.85)" }}
-  >
-    <source src="/videos/natarajpose2.mp4" type="video/mp4" />
-  </video>
-
-  {/* Overlay */}
-  <div
-    aria-hidden
-    className="absolute inset-0"
-    style={{
-      background: "color-mix(in oklab, var(--color-foreground), transparent 75%)",
-    }}
-  />
-
-  {/* HERO TEXT */}
-  <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 min-h-[70vh] md:min-h-[80vh]">
-    <div className="max-w-3xl mx-auto">
-      <p className="text-sm uppercase tracking-[0.25em] text-primary-foreground/80 mb-2">
-        NrityaNetra
-      </p>
-
-      <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-primary-foreground drop-shadow-xl mb-4">
-        Discover the Mudras of India
-      </h1>
-
-      <p className="text-lg md:text-xl text-primary-foreground/95 leading-relaxed drop-shadow">
-        Learn classical Indian dance forms, decode mudras with AI, and explore the rich
-        heritage of Indian dance through stories, movement, and maps.
-      </p>
-    </div>
-
-    {/* CTA Buttons */}
-    <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-      <a
-        href="#explore-learn"
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all"
-      >
-        Start Exploring
-        <ArrowRight className="w-4 h-4" />
-      </a>
-
-      <a
-        href="/predict"
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-primary/70 bg-black/40 text-primary-foreground font-semibold hover:bg-primary/10 transition-all"
-      >
-        Try Mudra AI
-      </a>
-    </div>
-  </div>
-</section>
-
-
-      {/* HISTORY + MAP GRID (unchanged core content as requested) */}
-      <section className="px-4 py-16 md:py-20 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-          {/* HISTORY COLUMN */}
-          <div className="rounded-2xl glass-panel p-8 space-y-5 bg-background/80 border border-border">
-            <h2 className="font-serif text-3xl text-foreground">History of Classical Dance</h2>
-
-            <p className="text-lg leading-relaxed text-muted-foreground">
-              Indian classical dance has its roots in rituals, temple traditions, and storytelling.
-              Originating thousands of years ago, these art forms evolved through devotional
-              movements, royal courts, and cultural exchange across regions. They were shaped by
-              spiritual philosophy, poetic expression, and the ancient desire to convey emotion
-              through movement.
-            </p>
-
-            <p className="text-lg leading-relaxed text-muted-foreground">
-              The <strong>Natyashastra</strong>, attributed to the sage Bharata, stands as the
-              foundational text, detailing the grammar of performance—mudras, rhythm, rasa,
-              expression, stagecraft, and narrative. It unified movement, music, theatre, and
-              spirituality into a single aesthetic system that still influences Indian arts today.
-            </p>
-
-            <a
-              href="/history"
-              className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:shadow-lg transition-shadow"
+      {/* Hero */}
+      <section className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-32 md:px-6 md:pb-28 md:pt-40 lg:grid-cols-12 lg:gap-8 lg:px-8">
+        <div className="rise-in lg:col-span-7">
+          <p className="eyebrow mb-6">Indian classical dance · mudras</p>
+          <h1 className="font-serif text-5xl leading-[1.05] text-foreground sm:text-6xl lg:text-7xl">
+            Where the hand goes,
+            <br />
+            <em className="text-accent">the eye follows.</em>
+          </h1>
+          <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            NrityaNetra is a quiet place to learn the language of the hands in Indian classical dance, and to check
+            your own mudras with the help of a camera.
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+            <Link
+              href="/predict"
+              className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-sm font-medium text-accent-foreground transition hover:bg-accent/90"
             >
-              Know More
-              <ArrowRight className="w-4 h-4" />
-            </a>
+              Try a mudra <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link
+              href="#atlas"
+              className="text-sm font-medium text-foreground underline decoration-border underline-offset-8 transition hover:decoration-accent"
+            >
+              Find a dance on the map
+            </Link>
           </div>
+        </div>
 
-          {/* MAP COLUMN */}
-          <div className="rounded-2xl p-4 bg-card shadow-sm border border-border">
-            <div className="w-full h-[550px] md:h-[640px]">
-              <IndiaDanceMap onHover={handleMapHover} onLeave={handleMapLeave} />
-            </div>
+        <div className="rise-in relative mx-auto w-full max-w-sm lg:col-span-5 lg:max-w-none" style={{ animationDelay: "120ms" }}>
+          <div className="arch-mask relative mx-auto aspect-[4/5] w-full max-w-md border border-border bg-muted shadow-[0_30px_60px_-35px_rgba(74,44,0,0.55)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/indian-classical-dance-hand-mudra-gestures.jpg"
+              alt="A dancer's hand held in a classical mudra"
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="absolute -bottom-8 -left-2 hidden w-40 overflow-hidden rounded-2xl border-4 border-background shadow-lg sm:block md:-left-6 md:w-48">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/bharatanatyam.jpg" alt="Bharatanatyam dancer" className="aspect-[4/5] w-full object-cover" />
+          </div>
+        </div>
+      </section>
 
-            {/* Small info box reacting to hover */}
-            <div className="mt-4 rounded-xl border border-dashed border-amber-300/60 bg-amber-50/70 px-4 py-3 text-sm">
-              {hover ? (
-                <>
-                  <div className="font-semibold text-amber-900 mb-1">
-                    {hover.dance} in {hover.state}
+      {/* Chain */}
+      <section className="border-y border-border/70 bg-card/40">
+        <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">
+          <Reveal>
+            <p className="mx-auto max-w-2xl text-center font-serif text-2xl italic leading-snug text-foreground md:text-3xl">
+              Yato hasta stato drishti, yato drishti stato manah&hellip;
+            </p>
+            <p className="mx-auto mt-3 max-w-xl text-center text-sm text-muted-foreground">
+              A line from the classical dance treatises: the hand leads the eye, the eye leads the mind, and so on
+              until the feeling becomes rasa.
+            </p>
+          </Reveal>
+          <Reveal delay={120}>
+            <ol className="mt-14 grid grid-cols-2 gap-y-10 sm:grid-cols-5">
+              {CHAIN.map((c, i) => (
+                <li key={c.word} className="relative text-center">
+                  <span className="font-deva text-4xl text-accent md:text-5xl">{c.deva}</span>
+                  <span className="mt-2 block font-serif text-lg text-foreground">{c.word}</span>
+                  <span className="block text-xs uppercase tracking-widest text-muted-foreground">{c.meaning}</span>
+                  {i < CHAIN.length - 1 && (
+                    <span className="absolute right-0 top-5 hidden translate-x-1/2 text-border sm:block" aria-hidden>
+                      &rarr;
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Atlas */}
+      <section id="atlas" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-24 md:px-6 md:py-32 lg:px-8">
+        <Reveal className="mb-14 max-w-2xl">
+          <p className="eyebrow mb-4">An atlas of movement</p>
+          <h2 className="font-serif text-4xl text-foreground md:text-5xl">Every region has a dance of its own.</h2>
+          <p className="mt-5 leading-relaxed text-muted-foreground">
+            Move across the map to see which tradition belongs where. Pick a state to read more.
+          </p>
+        </Reveal>
+        <Atlas />
+      </section>
+
+      {/* Index */}
+      <section className="border-t border-border/70">
+        <div className="mx-auto max-w-5xl px-4 py-24 md:px-6 md:py-28 lg:px-8">
+          <Reveal>
+            <p className="eyebrow mb-4">Where to next</p>
+            <h2 className="font-serif text-4xl text-foreground md:text-5xl">Three ways in.</h2>
+          </Reveal>
+          <ul className="mt-12 divide-y divide-border border-y border-border">
+            {INDEX.map((row) => (
+              <li key={row.n}>
+                <Link
+                  href={row.href}
+                  className="group grid grid-cols-[3rem_1fr_auto] items-center gap-4 py-8 transition md:grid-cols-[5rem_14rem_1fr_auto] md:gap-8"
+                >
+                  <span className="font-serif text-lg text-muted-foreground md:text-2xl">{row.n}</span>
+                  <span className="font-serif text-2xl text-foreground transition group-hover:text-accent md:text-3xl">
+                    {row.title}
+                  </span>
+                  <span className="col-span-2 col-start-2 row-start-2 text-sm leading-relaxed text-muted-foreground md:col-span-1 md:col-start-3 md:row-start-1 md:text-base">
+                    {row.text}
+                  </span>
+                  <ArrowUpRight
+                    className="h-6 w-6 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Mudra strip */}
+      <section className="bg-card/40">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-24 md:px-6 md:py-28 lg:grid-cols-12 lg:px-8">
+          <Reveal className="lg:col-span-4">
+            <p className="eyebrow mb-4">A first look</p>
+            <h2 className="font-serif text-4xl text-foreground">Names for the hands.</h2>
+            <p className="mt-5 leading-relaxed text-muted-foreground">
+              Each mudra has a name and a meaning. These four are the ones the AI recognises most reliably.
+            </p>
+            <Link
+              href="/predict#guide"
+              className="mt-7 inline-flex items-center gap-1.5 text-sm font-medium text-accent underline-offset-4 hover:underline"
+            >
+              See the full guide <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Reveal>
+          <Reveal delay={100} className="lg:col-span-8">
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {STRIP.map((m, i) => (
+                <li key={m.name} className={i % 2 === 1 ? "sm:translate-y-6" : ""}>
+                  <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-[#0a0807]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/images/mudra-guide/${m.img}.jpg`}
+                      alt={`The ${m.name} mudra`}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <p className="text-amber-900/80">
-                    Hovering over <strong>{hover.state}</strong>. Click the highlighted region in the
-                    map (if interactive in your implementation) or explore the dance page directly
-                    from the menu.
-                  </p>
-                </>
-              ) : (
-                <p className="text-amber-900/80">
-                  Hover over different states on the map to see which classical or folk forms are
-                  associated with them.
-                </p>
-              )}
-            </div>
-          </div>
+                  <p className="mt-3 font-serif text-lg text-foreground">{m.name}</p>
+                  <p className="text-sm text-muted-foreground">{m.gloss}</p>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
       </section>
 
-      {/* EXPLORE & LEARN FLEXBOX SECTION (improved) */}
-      <section
-        id="explore-learn"
-        className="px-4 py-16 md:py-20 max-w-7xl mx-auto bg-gradient-to-b from-background via-amber-50/40 to-background rounded-3xl mb-12"
-      >
-        <div className="text-center mb-10">
-          <h2 className="font-serif text-3xl md:text-4xl">Explore & Learn</h2>
-          <TempleDivider />
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Whether you&apos;re a dancer, a learner, or just curious, MudraMap helps you discover
-            forms, decode gestures, and experiment with AI-powered mudra recognition.
+      {/* History */}
+      <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-24 md:px-6 md:py-32 lg:grid-cols-2 lg:gap-20 lg:px-8">
+        <Reveal>
+          <div className="overflow-hidden rounded-3xl border border-border bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/ancient-sanskrit-text-natyashastra-manuscript-indi.jpg"
+              alt="A Sanskrit manuscript on dance and drama"
+              className="aspect-[4/3] w-full object-cover"
+            />
+          </div>
+        </Reveal>
+        <Reveal delay={100}>
+          <p className="eyebrow mb-4">Roots</p>
+          <h2 className="font-serif text-4xl text-foreground md:text-5xl">An art older than the stage.</h2>
+          <p className="mt-6 leading-relaxed text-muted-foreground">
+            Indian classical dance grew out of temples, courts and village gatherings, and was set down in Sanskrit
+            texts that describe gestures, expressions and the feelings they carry.
           </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* CARD 1 */}
-          <a
-            href="/explore"
-            className="group rounded-2xl p-8 border border-border/60 bg-card/90 backdrop-blur-sm
-                      hover:border-amber-500/60 hover:shadow-xl transition-all duration-300
-                      flex flex-col justify-between"
+          <Link
+            href="/history"
+            className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-accent underline-offset-4 hover:underline"
           >
-            <div>
-              <div className="h-px w-12 bg-amber-600/70 mb-6" />
+            Read the history <ArrowUpRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </Reveal>
+      </section>
 
-              <h3 className="font-serif text-2xl mb-3 tracking-tight group-hover:text-amber-800 transition-colors">
-                Dance Forms
-              </h3>
-
-              <p className="text-muted-foreground leading-relaxed">
-                Study classical and regional Indian dance traditions through their historical
-                context, stylistic grammar, and defining mudras.
-              </p>
-            </div>
-
-            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-amber-800">
-              Explore forms
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </a>
-
-          {/* CARD 2 */}
-          <a
-            href="/learn"
-            className="group rounded-2xl p-8 border border-border/60 bg-card/90 backdrop-blur-sm
-                      hover:border-amber-500/60 hover:shadow-xl transition-all duration-300
-                      flex flex-col justify-between"
-          >
-            <div>
-              <div className="h-px w-12 bg-amber-600/70 mb-6" />
-
-              <h3 className="font-serif text-2xl mb-3 tracking-tight group-hover:text-amber-800 transition-colors">
-                Mudra Lexicon
-              </h3>
-
-              <p className="text-muted-foreground leading-relaxed">
-                Learn hand gestures as a visual language—names, meanings, narrative usage,
-                and stylistic variations across traditions.
-              </p>
-            </div>
-
-            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-amber-800">
-              Learn mudras
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </a>
-
-          {/* CARD 3 */}
-          <a
+      {/* Closing */}
+      <section className="border-t border-border/70 py-24 text-center md:py-32">
+        <Reveal className="mx-auto max-w-2xl px-4">
+          <p className="font-deva text-5xl text-accent">नृत्य नेत्र</p>
+          <h2 className="mt-6 font-serif text-3xl text-foreground md:text-4xl">Begin with a single gesture.</h2>
+          <Link
             href="/predict"
-            className="group rounded-2xl p-8 border border-border/60 bg-card/90 backdrop-blur-sm
-                      hover:border-amber-500/60 hover:shadow-xl transition-all duration-300
-                      flex flex-col justify-between"
+            className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-accent-foreground transition hover:bg-accent/90"
           >
-            <div>
-              <div className="h-px w-12 bg-amber-600/70 mb-6" />
-
-              <h3 className="font-serif text-2xl mb-3 tracking-tight group-hover:text-amber-800 transition-colors">
-                Mudra AI
-              </h3>
-
-              <p className="text-muted-foreground leading-relaxed">
-                Use computer vision to analyze mudras from images or live video and
-                receive confidence-based recognition feedback.
-              </p>
-            </div>
-
-            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-amber-800">
-              Try recognition
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </a>
-        </div>
-
+            Open the AI studio <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </Reveal>
       </section>
-
-      {/* EXTRA SECTION: JOURNEY / HOW IT WORKS */}
-      <section className="px-4 pb-20 max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="font-serif text-3xl md:text-4xl">Your Mudra Journey</h2>
-          <TempleDivider />
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Follow a simple path—from discovering forms, to practicing gestures, to using AI as
-            your companion in learning.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-border bg-card/80 p-6 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-amber-100 border border-amber-400 flex items-center justify-center font-semibold mb-3">
-              1
-            </div>
-            <h3 className="font-serif text-xl mb-2">Discover</h3>
-            <p className="text-sm text-muted-foreground">
-              Start with the map and history pages to understand where each dance comes from and
-              how it evolved.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card/80 p-6 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-amber-100 border border-amber-400 flex items-center justify-center font-semibold mb-3">
-              2
-            </div>
-            <h3 className="font-serif text-xl mb-2">Learn</h3>
-            <p className="text-sm text-muted-foreground">
-              Dive deeper into mudras, rasas, and movement vocabulary with examples and practical
-              guidance.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card/80 p-6 flex flex-col items-center text-center">
-            <div className="w-10 h-10 rounded-full bg-amber-100 border border-amber-400 flex items-center justify-center font-semibold mb-3">
-              3
-            </div>
-            <h3 className="font-serif text-xl mb-2">Experiment</h3>
-            <p className="text-sm text-muted-foreground">
-              Use Mudra AI to test your poses, refine accuracy, and make learning interactive and
-              fun.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="mt-4 py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} NrityaNetra · Celebrating India&apos;s dance heritage
-      </footer>
-    </>
+    </main>
   )
 }

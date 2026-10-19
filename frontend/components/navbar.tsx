@@ -1,137 +1,128 @@
-
 "use client"
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTheme } from "next-themes"
+import { Menu, Moon, Sun, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const links = [
   { href: "/", label: "Home" },
   { href: "/history", label: "History" },
-  { href: "/predict", label: "AI" },
+  { href: "/predict", label: "AI studio" },
   { href: "/explore", label: "Explore" },
+  { href: "/learn", label: "Learn" },
 ]
 
-export function Navbar() {
-  // This hook is client-only — fine because this is a client component.
-  const pathname = usePathname()
+function Logo() {
+  return (
+    <Link href="/" className="group flex items-center gap-3" aria-label="NrityaNetra home">
+      <span className="relative grid h-10 w-10 place-items-center rounded-full bg-primary/15 ring-1 ring-primary/30 transition group-hover:ring-primary/60">
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-accent text-accent-foreground font-deva text-[15px] leading-none pb-0.5">
+          ॐ
+        </span>
+      </span>
+      <span className="font-serif text-xl tracking-tight text-foreground">
+        Nritya<span className="text-accent">Netra</span>
+      </span>
+    </Link>
+  )
+}
 
-  // mounted guards any UI that might differ between SSR and client
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const [open, setOpen] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const dark = mounted && resolvedTheme === "dark"
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-background/90 backdrop-blur-sm text-foreground border-b border-border shadow-sm">
-      <nav className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl" aria-hidden>
-              🕉️
-            </span>
-            <span className="font-serif text-lg font-bold tracking-tight">NrityaNetra</span>
-          </Link>
-        </div>
+    <button
+      type="button"
+      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      className="grid h-9 w-9 place-items-center rounded-full text-accent transition hover:bg-primary/15"
+    >
+      {dark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+    </button>
+  )
+}
 
-        {/* Primary links - rendered the same on server; interactive highlighting applied only after mount */}
-        <div className="hidden md:flex md:flex-1 md:justify-center">
-          <ul className="flex items-center gap-4">
-            {links.map((l) => {
-              // compute active ONLY after mount to avoid SSR/client mismatch
-              const base = l.href.split("?")[0]
-              const active = mounted ? (base === "/" ? pathname === "/" : pathname?.startsWith(base)) : false
+export function Navbar() {
+  const pathname = usePathname()
+  // active-link highlighting is applied after mount so server and client markup match
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const [open, setOpen] = useState(false)
 
-              return (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className={cn(
-                      "px-3 py-2 text-sm font-medium rounded-full transition-all",
-                      active
-                        ? "bg-primary/10 text-primary ring-1 ring-primary/10 shadow-sm"
-                        : "text-foreground hover:text-primary hover:bg-foreground/5"
-                    )}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
+  const isActive = (href: string) =>
+    mounted ? (href === "/" ? pathname === "/" : pathname?.startsWith(href)) : false
 
-        {/* Mobile + CTA */}
-        <div className="flex items-center gap-3">
-          {/* small CTA for desktop */}
+  return (
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-md">
+      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6 lg:px-8">
+        <Logo />
+
+        <ul className="hidden items-center gap-1 md:flex">
+          {links.map((l) => (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm transition-colors",
+                  isActive(l.href)
+                    ? "bg-muted font-medium text-accent"
+                    : "text-foreground/75 hover:bg-muted/60 hover:text-foreground"
+                )}
+              >
+                {l.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link
-            href="/learn"
-            className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95 transition"
+            href="/about"
+            className="hidden rounded-full border border-border bg-background/60 px-4 py-2 text-sm font-medium transition hover:border-accent/50 hover:text-accent md:inline-flex"
           >
-            Explore Mudras
+            About
           </Link>
-
-          {/* hamburger */}
           <button
+            type="button"
             aria-label="Toggle menu"
+            aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center justify-center md:hidden p-2 rounded-md hover:bg-foreground/5 transition"
+            className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted/70 md:hidden"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              {open ? (
-                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
 
-      {/* Mobile panel - it's fine to conditionally show this, it's hidden on server but only becomes visible after interaction */}
       <div
         className={cn(
-          "md:hidden transition-[max-height,opacity] duration-200 ease-out overflow-hidden border-t border-border bg-background/95",
-          open ? "max-h-80 opacity-100" : "max-h-0 opacity-0"
+          "overflow-hidden border-t border-border/70 bg-background/95 transition-[max-height,opacity] duration-200 md:hidden",
+          open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        <div className="px-4 py-3">
-          <ul className="flex flex-col gap-2">
-            {links.map((l) => {
-              const base = l.href.split("?")[0]
-              // again compute active only after mount
-              const active = mounted ? (base === "/" ? pathname === "/" : pathname?.startsWith(base)) : false
-              return (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "block px-3 py-2 rounded-md text-sm font-medium transition",
-                      active ? "bg-primary/10 text-primary" : "hover:bg-foreground/5"
-                    )}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-
-          <div className="mt-3">
-            <Link
-              href="/predict"
-              className="block text-center w-full px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold"
-              onClick={() => setOpen(false)}
-            >
-              Try Mudra AI
-            </Link>
-          </div>
-        </div>
+        <ul className="flex flex-col gap-1 px-4 py-3">
+          {[...links, { href: "/about", label: "About" }].map((l) => (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "block rounded-xl px-4 py-2.5 text-sm transition",
+                  isActive(l.href) ? "bg-muted font-medium text-accent" : "hover:bg-muted/60"
+                )}
+              >
+                {l.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </header>
   )
