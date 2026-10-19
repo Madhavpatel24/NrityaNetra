@@ -23,6 +23,9 @@ importers:
       '@mediapipe/hands':
         specifier: ^0.4.1675469240
         version: 0.4.1675469240
+      '@mediapipe/tasks-vision':
+        specifier: ^1.1.0
+        version: 1.1.1
       '@radix-ui/react-accordion':
         specifier: 1.2.2
         version: 1.2.2(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -411,6 +414,9 @@ packages:
 
   '@mediapipe/hands@0.4.1675469240':
     resolution: {integrity: sha512-GxoZvL1mmhJxFxjuyj7vnC++JIuInGznHBin5c7ZSq/RbcnGyfEcJrkM/bMu5K1Mz/2Ko+vEX6/+wewmEHPrHg==}
+
+  '@mediapipe/tasks-vision@1.1.1':
+    resolution: {integrity: sha512-jwntgT5tzDrKOkqg6xNDNpRcTUnGvmylZE5DFnzPXossiWOIDdZX+C81LI75hlXhsG58YZW+lGzcmjH1qrQE/Q==}
 
   '@next/env@15.5.9':
     resolution: {integrity: sha512-4GlTZ+EJM7WaW2HEZcyU317tIQDjkQIyENDLxYJfSWlfqguN+dHkZgyQTV/7ykvobU7yEH5gKvreNrH4B6QgIg==}
@@ -2244,6 +2250,8 @@ snapshots:
   '@mediapipe/drawing_utils@0.3.1675466124': {}
 
   '@mediapipe/hands@0.4.1675469240': {}
+
+  '@mediapipe/tasks-vision@1.1.1': {}
 
   '@next/env@15.5.9': {}
 
